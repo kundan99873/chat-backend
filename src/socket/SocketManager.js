@@ -72,10 +72,9 @@ class SocketManager {
         });
       });
 
-      socket.on("sendMessage", async (chatId, senderId, message) => {
+      socket.on("newMessage", async (chatId, senderId, message) => {
         console.log(`Message from ${senderId} in chat ${chatId}: ${message}`);
 
-        // Save message to DB
         await this.saveMessage(chatId, senderId, message);
 
         const chat = await Chat.findById(chatId);
@@ -85,7 +84,7 @@ class SocketManager {
             if (participantSocketId) {
               this.io
                 .to(participantSocketId)
-                .emit("receiveMessage", { senderId, message });
+                .emit("newMessage", { senderId, message });
             }
           });
         }

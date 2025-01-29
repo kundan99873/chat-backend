@@ -42,7 +42,7 @@ router.get("/get-messages/:id", async (req, res) => {
     }
 
     const totalMessages = await Message.countDocuments({ chatId: id });
-    const formattedMessages = chatData.reverse().map((message) => ({
+    const formattedMessages = chatData.map((message) => ({
       message: message.message,
       senderId: message.senderId._id.toString(),
       timestamp: message.timestamp,
@@ -50,15 +50,11 @@ router.get("/get-messages/:id", async (req, res) => {
       isSeen: message.isSeen,
     }));
 
-    // Send paginated response
-    res.json({
+    return res.json({
       success: true,
       data: formattedMessages,
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        hasMore: pageNum * limitNum < totalMessages,
-      },
+      currentPage: page,
+      totalPages: Math.ceil(totalMessages / limitNum),
     });
   } catch (error) {
     console.error(error);
