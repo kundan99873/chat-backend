@@ -7,6 +7,8 @@ const router = Router();
 router.get("/get-messages/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    const { page = 1, limit = 15 } = req.query;
+
     if (!id) {
       return res.status(400).json({ message: "Invalid chat ID" });
     }
@@ -16,22 +18,48 @@ router.get("/get-messages/:id", async (req, res) => {
       return res.status(400).json({ message: "Invalid chat ID" });
     }
 
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+
+    if (pageNum <= 0 || limitNum <= 0) {
+      return res
+        .status(400)
+        .json({ message: "Page and limit must be positive integers" });
+    }
+
+    // Query to find messages with pagination
     const chatData = await Message.find({ chatId: id })
+      .sort({ timestamp: -1 })
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
       .populate("senderId", "username")
       .exec();
 
     if (!chatData || chatData.length === 0) {
-      return res.status(401).json({ message: "Chat not found", data: [] });
+      return res
+        .status(404)
+        .json({ message: "No messages found for this chat", data: [] });
     }
 
-    const formattedMessages = chatData.map((message) => ({
+    const totalMessages = await Message.countDocuments({ chatId: id });
+    const formattedMessages = chatData.reverse().map((message) => ({
       message: message.message,
       senderId: message.senderId._id.toString(),
       timestamp: message.timestamp,
       username: message.senderId.username,
       isSeen: message.isSeen,
     }));
-    res.json({ success: true, data: formattedMessages });
+
+    // Send paginated response
+    res.json({
+      success: true,
+      data: formattedMessages,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        hasMore: pageNum * limitNum < totalMessages,
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
@@ -40,7 +68,7 @@ router.get("/get-messages/:id", async (req, res) => {
 
 router.post("/seen-messages", async (req, res) => {
   try {
-    const { chatId } = req.body;
+    const { chatId, userId } = req.body;
 
     if (!chatId || !mongoose.Types.ObjectId.isValid(chatId)) {
       return res
@@ -49,11 +77,11 @@ router.post("/seen-messages", async (req, res) => {
     }
 
     const updateResult = await Message.updateMany(
-      { chatId, isSeen: false },
+      { chatId, senderId: userId, isSeen: false },
       { $set: { isSeen: true } }
     );
 
-    console.log(updateResult)
+    console.log(updateResult);
 
     return res.json({
       success: true,

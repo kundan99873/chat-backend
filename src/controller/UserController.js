@@ -185,12 +185,12 @@ router.get("/all-users-chat", verifyToken, async (req, res) => {
 router.get("/all-users", verifyToken, async (req, res) => {
   try {
     const loggedInUserId = req.User.id;
-    const { search } = req.query; // Fetch the search query from query parameters
+    const { search } = req.query;
 
     // Build the filter for searching users
     const userFilter = {
-      _id: { $ne: loggedInUserId }, // Exclude the logged-in user
-      ...(search && { username: { $regex: search, $options: "i" } }), // Case-insensitive search
+      _id: { $ne: loggedInUserId },
+      ...(search && { username: { $regex: search, $options: "i" } }),
     };
 
     // Fetch users matching the filter
@@ -229,6 +229,7 @@ router.get("/all-users", verifyToken, async (req, res) => {
 
         const unreadMessagesCount = await Message.countDocuments({
           chatId,
+          senderId: user._id,
           isSeen: false,
         });
 
@@ -252,7 +253,6 @@ router.get("/all-users", verifyToken, async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
-
 
 router.get("/get-user-details/:id", verifyToken, async (req, res) => {
   try {

@@ -1,13 +1,13 @@
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
-import connectToMongo from "./config/dbConnection.js";
-import SocketManager from "./socket/SocketManager.js";
+import connectToMongo from "./src/config/dbConnection.js";
+import SocketManager from "./src/socket/SocketManager.js";
 import cors from "cors";
-import userRouter from "./controller/UserController.js";
+import userRouter from "./src/controller/UserController.js";
 import cookieParser from "cookie-parser";
-import { corsConfig } from "./constants/index.js";
-import chatRouter from "./controller/ChatController.js";
+import { corsConfig } from "./src/constants/index.js";
+import chatRouter from "./src/controller/ChatController.js";
 const app = express();
 const server = http.createServer(app);
 
