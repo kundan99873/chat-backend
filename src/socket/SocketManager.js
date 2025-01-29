@@ -1,37 +1,7 @@
-// class SocketManager {
-//   constructor(io) {
-//     this.io = io;
-//     this.initialize();
-//   }
-
-//   initialize() {
-//     this.io.on("connection", (socket) => {
-//       console.log("New client connected:", socket.id);
-//       socket.on("sendMessage", (data) => {
-//         console.log("Message received:", data);
-//         this.io.emit("receiveMessage", data);
-//       });
-
-//       socket.on("joinRoom", (room) => {
-//         console.log("Client joined room:", room);
-//         socket.join(room);
-//         this.io.to(room).emit("roomMessage", `${socket.id} joined the room`);
-//       });
-
-//       socket.on("disconnect", () => {
-//         console.log("Client disconnected:", socket.id);
-//       });
-//     });
-//   }
-// }
-
-// export default SocketManager;
-
 import Chat from "../schema/chatSchema.js";
 import Message from "../schema/messageSchema.js";
 
-// You need to have some way to map user IDs to socket IDs
-const userSocketMap = {}; // Keep track of connected users
+const userSocketMap = {};
 
 class SocketManager {
   constructor(io) {
@@ -42,7 +12,7 @@ class SocketManager {
   initialize() {
     this.io.on("connection", (socket) => {
       console.log("New client connected:", socket.id);
-      // Register the user with their socket ID when they connect
+
       socket.on("registerUser", ({ userId }) => {
         userSocketMap[userId] = socket.id;
         console.log(`User ${userId} connected with socket ID: ${socket.id}`);
@@ -54,16 +24,13 @@ class SocketManager {
         );
 
         console.log(participants);
-
         const uniqueParticipants = [...new Set(participants)];
 
-        // Get or create the chat
         let chat = await this.getChatByParticipants(uniqueParticipants);
         if (!chat) {
           chat = await this.createChat(uniqueParticipants);
         }
 
-        // Emit the chat ID to the participants
         uniqueParticipants.forEach((participantId) => {
           const participantSocketId = this.getSocketIdForUser(participantId);
           if (participantSocketId) {
@@ -91,7 +58,6 @@ class SocketManager {
       });
 
       socket.on("disconnect", () => {
-        // Remove the user from the socket map when they disconnect
         for (let userId in userSocketMap) {
           if (userSocketMap[userId] === socket.id) {
             delete userSocketMap[userId];
@@ -127,7 +93,7 @@ class SocketManager {
   }
 
   getSocketIdForUser(userId) {
-    return userSocketMap[userId]; // Return the socket ID of the user
+    return userSocketMap[userId];
   }
 }
 
