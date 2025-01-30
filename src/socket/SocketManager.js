@@ -57,6 +57,45 @@ class SocketManager {
         }
       });
 
+      socket.on("callUser", ({ to, offer, from }) => {
+        console.log(`Call initiated from ${from} to ${to}`);
+        const participantSocketId = this.getSocketIdForUser(to);
+        if (participantSocketId) {
+          this.io
+            .to(participantSocketId)
+            .emit("callIncoming", { from, offer });
+        }
+      });
+
+      socket.on("answerCall", ({ to, answer, from }) => {
+        console.log(`Call initiated from ${from} to ${to}`);
+        const participantSocketId = this.getSocketIdForUser(to);
+        if (participantSocketId) {
+          this.io
+            .to(participantSocketId)
+            .emit("callAnswered", { from, answer });
+        }
+      });
+
+      socket.on("iceCandidate", ({ to, candidate, from }) => {
+        const participantSocketId = this.getSocketIdForUser(to);
+        if (participantSocketId) {
+          this.io
+            .to(participantSocketId)
+            .emit("iceCandidate", { from, candidate });
+        }
+      });
+
+      socket.on("endCall", ({ to, from }) => {
+        console.log(`Call ended from ${from} to ${to}`);
+        const participantSocketId = this.getSocketIdForUser(to);
+        if (participantSocketId) {
+          // Emit to the other user that the call has ended
+          this.io.to(participantSocketId).emit("callEnded", { from });
+        }
+      });
+      
+
       socket.on("disconnect", () => {
         for (let userId in userSocketMap) {
           if (userSocketMap[userId] === socket.id) {
