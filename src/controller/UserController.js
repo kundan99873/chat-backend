@@ -113,6 +113,62 @@ router.get("/authenticate", verifyToken, (req, res) => {
   }
 });
 
+router.post("/refresh-token", async (req, res) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) {
+      return res
+        .status(403)
+        .json({ success: false, message: "No refresh token provided" });
+    }
+    let decoded = jwt.verify(refreshToken, process.env.REFRESH_SECRET_KEY);
+    const user = await userModal.findById(decoded.id);
+    if (!user || !user.isActive) {
+      return res
+        .status(403)
+        .json({ success: false, message: "User not found or inactive" });
+    }
+    const accessToken = jwt.sign(
+      { id: user._id, role: userRole },
+      process.env.ACCESS_SECRET_KEY,
+      {
+        expiresIn: "1d",
+      }
+    );
+    const newrefreshToken = jwt.sign(
+      { id: user._id, role: userRole },
+      process.env.REFRESH_SECRET_KEY,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    await userModal.updateOne(
+      { _id: user._id },
+      { $set: { refreshToken: newrefreshToken } }
+    );
+
+    return res
+      .status(200)
+      .cookie("refreshToken", newrefreshToken, {
+        httpOnly: true,
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      })
+      .cookie("accessToken", accessToken, {
+        httpOnly: true,
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      })
+      .json({
+        status: true,
+        message: "Token updated successfully",
+      });
+  } catch (err) {
+    return res
+      .status(403)
+      .json({ success: false, message: "No refresh token provided" });
+  }
+});
+
 router.post("/logout", verifyToken, async (req, res) => {
   try {
     const user = req.User;

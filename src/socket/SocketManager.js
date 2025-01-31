@@ -94,6 +94,15 @@ class SocketManager {
           this.io.to(participantSocketId).emit("callEnded", { from });
         }
       });
+
+
+      socket.on("declineCall", ({ to, from }) => {
+        console.log(`Call declined from ${from} to ${to}`);
+        const participantSocketId = this.getSocketIdForUser(to);
+        if (participantSocketId) {
+          this.io.to(participantSocketId).emit("callDeclined", { from });
+        }
+      });
       
 
       socket.on("disconnect", () => {
